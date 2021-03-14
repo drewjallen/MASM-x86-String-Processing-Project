@@ -63,15 +63,22 @@ main PROC
 	CALL	CrLf
 	mDisplayString		OFFSET	instructionsOne
 	mDisplayString		OFFSET	instructionsTwo
-
-	PUSH	userDigitsEntered ; EBP + 28
-	PUSH	SIZEOF userInputBuffer ; EBP + 24
-	PUSH	convertedInput	; EBP + 20
-	PUSH	OFFSET userPrompt ; EBP + 16 
-	PUSH	OFFSET userInputBuffer ;EBP+12
-	PUSH	OFFSET errorMessage ; EBP+8
-	CALL	ReadVal
-	
+		
+	MOV		ECX, ARRAYSIZE
+	MOV		EDI, OFFSET userArray		
+	_fillArrayLoop:
+		MOV		EAX, 0
+		PUSH	userDigitsEntered ; EBP + 28
+		PUSH	SIZEOF userInputBuffer ; EBP + 24
+		PUSH	OFFSET convertedInput	; EBP + 20
+		PUSH	OFFSET userPrompt ; EBP + 16 
+		PUSH	OFFSET userInputBuffer ;EBP+12
+		PUSH	OFFSET errorMessage ; EBP+8
+		CALL	ReadVal
+		MOV		EAX, convertedInput
+		MOV		[EDI], EAX
+		ADD		EDI, 4
+		LOOP	_fillArrayLoop
 
 	CALL	WriteVal
 
@@ -125,13 +132,22 @@ ReadVal PROC
 			JMP		_skipToEnd
 
 		_skipToEndNegative:
-			MOV		EDX, 1
+			MOV		EDX, -1
 		
 		_skipToEnd:
 		LOOP _conversionLoop
 
-	MOV		[EBP+20], EAX
+	CMP		EDX, -1
+	JE		_makeNegative
+	JMP		_notNegative
 
+	_makeNegative:
+		MUL		EDX
+
+	_notNegative:
+		MOV		EBX, [EBP+20]
+		MOV		[EBX], EAX
+	
 	POPAD
 	POP		EBP
 	RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
@@ -145,6 +161,33 @@ WriteVal PROC
 	POP		EBP
 	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 WriteVal ENDP
+
+DisplayList PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+
+
+	POP		EBP
+	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+DisplayList ENDP
+
+DisplaySum PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+
+
+	POP		EBP
+	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+DisplaySum ENDP
+
+DisplayAverage PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+
+
+	POP		EBP
+	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+DisplayAverage ENDP
 
 
 END main

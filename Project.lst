@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/13/21 22:25:49
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 13:25:30
 <Project 6: String Primitives and Macros    (Proj6_Allendr.a  Page 1 - 1
 
 
@@ -185,107 +185,123 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/13/21 22:25:49
  0000003E  E8 00000000 E     1		CALL	WriteString
  00000043  E8 00000000 E     1		CALL	CrLf
  00000048  5A		     1		POP		EDX
+						
+ 00000049  B9 0000000A			MOV		ECX, ARRAYSIZE
+ 0000004E  BF 000001B8 R		MOV		EDI, OFFSET userArray		
+ 00000053				_fillArrayLoop:
+ 00000053  B8 00000000				MOV		EAX, 0
+ 00000058  FF 35 000001B4 R			PUSH	userDigitsEntered ; EBP + 28
+ 0000005E  6A 0D				PUSH	SIZEOF userInputBuffer ; EBP + 24
+ 00000060  68 000001E0 R			PUSH	OFFSET convertedInput	; EBP + 20
+ 00000065  68 000000DB R			PUSH	OFFSET userPrompt ; EBP + 16 
+ 0000006A  68 000001A7 R			PUSH	OFFSET userInputBuffer ;EBP+12
+ 0000006F  68 000000F4 R			PUSH	OFFSET errorMessage ; EBP+8
+ 00000074  E8 00000018				CALL	ReadVal
+ 00000079  A1 000001E0 R			MOV		EAX, convertedInput
+ 0000007E  89 07				MOV		[EDI], EAX
+ 00000080  83 C7 04				ADD		EDI, 4
+ 00000083  E2 CE				LOOP	_fillArrayLoop
 
- 00000049  FF 35 000001B4 R		PUSH	userDigitsEntered ; EBP + 28
- 0000004F  6A 0D			PUSH	SIZEOF userInputBuffer ; EBP + 24
- 00000051  FF 35 000001E0 R		PUSH	convertedInput	; EBP + 20
- 00000057  68 000000DB R		PUSH	OFFSET userPrompt ; EBP + 16 
- 0000005C  68 000001A7 R		PUSH	OFFSET userInputBuffer ;EBP+12
- 00000061  68 000000F4 R		PUSH	OFFSET errorMessage ; EBP+8
- 00000066  E8 0000000C			CALL	ReadVal
-					
-
- 0000006B  E8 00000083			CALL	WriteVal
+ 00000085  E8 0000008E			CALL	WriteVal
 
 
 
 					Invoke ExitProcess,0	; exit to operating system
- 00000070  6A 00	   *	    push   +000000000h
- 00000072  E8 00000000 E   *	    call   ExitProcess
- 00000077			main ENDP
+ 0000008A  6A 00	   *	    push   +000000000h
+ 0000008C  E8 00000000 E   *	    call   ExitProcess
+ 00000091			main ENDP
 
- 00000077			ReadVal PROC
- 00000077  55				PUSH	EBP
- 00000078  8B EC			MOV		EBP, ESP
- 0000007A  60				PUSHAD
+ 00000091			ReadVal PROC
+ 00000091  55				PUSH	EBP
+ 00000092  8B EC			MOV		EBP, ESP
+ 00000094  60				PUSHAD
 
- 0000007B  EB 0F			JMP	_try
+ 00000095  EB 0F			JMP	_try
 
- 0000007D				_errorTryAgain:
+ 00000097				_errorTryAgain:
 						mDisplayString [EBP+8]
- 0000007D  52		     1		PUSH	EDX
- 0000007E  8B 55 08	     1		MOV		EDX, [EBP+8]
- 00000081  E8 00000000 E     1		CALL	WriteString
- 00000086  E8 00000000 E     1		CALL	CrLf
- 0000008B  5A		     1		POP		EDX
- 0000008C				_try:
+ 00000097  52		     1		PUSH	EDX
+ 00000098  8B 55 08	     1		MOV		EDX, [EBP+8]
+ 0000009B  E8 00000000 E     1		CALL	WriteString
+ 000000A0  E8 00000000 E     1		CALL	CrLf
+ 000000A5  5A		     1		POP		EDX
+ 000000A6				_try:
 						mGetString [EBP+16], [EBP+12], [EBP+24], [EBP+28]
- 0000008C  60		     1		PUSHAD
- 0000008D  8B 55 10	     1		MOV		EDX, [EBP+16]
- 00000090  E8 00000000 E     1		CALL	WriteString
- 00000095  8B 55 0C	     1		MOV		EDX, [EBP+12]
- 00000098  8B 4D 18	     1		MOV		ECX, [EBP+24]
- 0000009B  E8 00000000 E     1		CALL	ReadString
- 000000A0  89 45 1C	     1		MOV		[EBP+28], EAX
- 000000A3  61		     1		POPAD
+ 000000A6  60		     1		PUSHAD
+ 000000A7  8B 55 10	     1		MOV		EDX, [EBP+16]
+ 000000AA  E8 00000000 E     1		CALL	WriteString
+ 000000AF  8B 55 0C	     1		MOV		EDX, [EBP+12]
+ 000000B2  8B 4D 18	     1		MOV		ECX, [EBP+24]
+ 000000B5  E8 00000000 E     1		CALL	ReadString
+ 000000BA  89 45 1C	     1		MOV		[EBP+28], EAX
+ 000000BD  61		     1		POPAD
 
 
- 000000A4  8B 75 0C			MOV		ESI, [EBP+12]
- 000000A7  8B 4D 1C			MOV		ECX, [EBP+28]
- 000000AA  B8 00000000			MOV		EAX, 0
- 000000AF  BA 00000000			MOV		EDX, 0 ; DX == 1: number is negative. == 0: positive. save until end and use to decide of IMUL needed on final number
- 000000B4				_conversionLoop:
- 000000B4  50					PUSH	EAX
- 000000B5  AC					LODSB
- 000000B6  BB 00000000				MOV		EBX, 0
- 000000BB  8A D8				MOV		BL, AL
- 000000BD  58					POP		EAX
+ 000000BE  8B 75 0C			MOV		ESI, [EBP+12]
+ 000000C1  8B 4D 1C			MOV		ECX, [EBP+28]
+ 000000C4  B8 00000000			MOV		EAX, 0
+ 000000C9  BA 00000000			MOV		EDX, 0 ; DX == 1: number is negative. == 0: positive. save until end and use to decide of IMUL needed on final number
+ 000000CE				_conversionLoop:
+ 000000CE  50					PUSH	EAX
+ 000000CF  AC					LODSB
+ 000000D0  BB 00000000				MOV		EBX, 0
+ 000000D5  8A D8				MOV		BL, AL
+ 000000D7  58					POP		EAX
 						
- 000000BE  83 FB 2B				CMP		EBX, 43
- 000000C1  74 26				JE		_skipToEnd
- 000000C3  83 FB 2D				CMP		EBX, 45
- 000000C6  74 1C				JE		_skipToEndNegative
+ 000000D8  83 FB 2B				CMP		EBX, 43
+ 000000DB  74 26				JE		_skipToEnd
+ 000000DD  83 FB 2D				CMP		EBX, 45
+ 000000E0  74 1C				JE		_skipToEndNegative
 
- 000000C8					_notSignSymbol:
- 000000C8  83 FB 30					CMP		EBX, 48
- 000000CB  7C B0					JL		_errorTryAgain
- 000000CD  83 FB 39					CMP		EBX, 57
- 000000D0  7F AB					JG		_errorTryAgain
+ 000000E2					_notSignSymbol:
+ 000000E2  83 FB 30					CMP		EBX, 48
+ 000000E5  7C B0					JL		_errorTryAgain
+ 000000E7  83 FB 39					CMP		EBX, 57
+ 000000EA  7F AB					JG		_errorTryAgain
 
- 000000D2  83 EB 30					SUB		EBX, 48
- 000000D5  52						PUSH	EDX
- 000000D6  BA 0000000A					MOV		EDX, 10
- 000000DB  F7 E2					MUL		EDX
- 000000DD  5A						POP		EDX
- 000000DE  03 C3					ADD		EAX, EBX
- 000000E0  70 9B					JO		_errorTryAgain
- 000000E2  EB 05					JMP		_skipToEnd
+ 000000EC  83 EB 30					SUB		EBX, 48
+ 000000EF  52						PUSH	EDX
+ 000000F0  BA 0000000A					MOV		EDX, 10
+ 000000F5  F7 E2					MUL		EDX
+ 000000F7  5A						POP		EDX
+ 000000F8  03 C3					ADD		EAX, EBX
+ 000000FA  70 9B					JO		_errorTryAgain
+ 000000FC  EB 05					JMP		_skipToEnd
 
- 000000E4					_skipToEndNegative:
- 000000E4  BA 00000001					MOV		EDX, 1
+ 000000FE					_skipToEndNegative:
+ 000000FE  BA FFFFFFFF					MOV		EDX, -1
 						
- 000000E9					_skipToEnd:
- 000000E9  E2 C9				LOOP _conversionLoop
+ 00000103					_skipToEnd:
+ 00000103  E2 C9				LOOP _conversionLoop
 
- 000000EB  89 45 14			MOV		[EBP+20], EAX
+ 00000105  83 FA FF			CMP		EDX, -1
+ 00000108  74 02			JE		_makeNegative
+ 0000010A  EB 02			JMP		_notNegative
 
- 000000EE  61				POPAD
- 000000EF  5D				POP		EBP
- 000000F0  C2 0018			RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 000000F3			ReadVal ENDP
+ 0000010C				_makeNegative:
+ 0000010C  F7 E2				MUL		EDX
 
- 000000F3			WriteVal PROC
- 000000F3  55				PUSH	EBP
- 000000F4  8B EC			MOV		EBP, ESP
+ 0000010E				_notNegative:
+ 0000010E  8B 5D 14				MOV		EBX, [EBP+20]
+ 00000111  89 03				MOV		[EBX], EAX
+					
+ 00000113  61				POPAD
+ 00000114  5D				POP		EBP
+ 00000115  C2 0018			RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 00000118			ReadVal ENDP
+
+ 00000118			WriteVal PROC
+ 00000118  55				PUSH	EBP
+ 00000119  8B EC			MOV		EBP, ESP
 
 
- 000000F6  5D				POP		EBP
- 000000F7  C3				RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 000000F8			WriteVal ENDP
+ 0000011B  5D				POP		EBP
+ 0000011C  C3				RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 0000011D			WriteVal ENDP
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/13/21 22:25:49
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 13:25:30
 <Project 6: String Primitives and Macros    (Proj6_Allendr.a  Symbols 2 - 1
 
 
@@ -388,7 +404,7 @@ Segments and Groups:
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
 _DATA  . . . . . . . . . . . . .	32 Bit	 000001E4 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 000000F8 Para	  Public  'CODE'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 0000011D Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
@@ -458,13 +474,15 @@ ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-ReadVal  . . . . . . . . . . . .	P Near	 00000077 _TEXT	Length= 0000007C Public STDCALL
-  _errorTryAgain . . . . . . . .	L Near	 0000007D _TEXT	
-  _try . . . . . . . . . . . . .	L Near	 0000008C _TEXT	
-  _conversionLoop  . . . . . . .	L Near	 000000B4 _TEXT	
-  _notSignSymbol . . . . . . . .	L Near	 000000C8 _TEXT	
-  _skipToEndNegative . . . . . .	L Near	 000000E4 _TEXT	
-  _skipToEnd . . . . . . . . . .	L Near	 000000E9 _TEXT	
+ReadVal  . . . . . . . . . . . .	P Near	 00000091 _TEXT	Length= 00000087 Public STDCALL
+  _errorTryAgain . . . . . . . .	L Near	 00000097 _TEXT	
+  _try . . . . . . . . . . . . .	L Near	 000000A6 _TEXT	
+  _conversionLoop  . . . . . . .	L Near	 000000CE _TEXT	
+  _notSignSymbol . . . . . . . .	L Near	 000000E2 _TEXT	
+  _skipToEndNegative . . . . . .	L Near	 000000FE _TEXT	
+  _skipToEnd . . . . . . . . . .	L Near	 00000103 _TEXT	
+  _makeNegative  . . . . . . . .	L Near	 0000010C _TEXT	
+  _notNegative . . . . . . . . .	L Near	 0000010E _TEXT	
 SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -501,9 +519,10 @@ WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-WriteVal . . . . . . . . . . . .	P Near	 000000F3 _TEXT	Length= 00000005 Public STDCALL
+WriteVal . . . . . . . . . . . .	P Near	 00000118 _TEXT	Length= 00000005 Public STDCALL
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000077 Public STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000091 Public STDCALL
+  _fillArrayLoop . . . . . . . .	L Near	 00000053 _TEXT	
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
