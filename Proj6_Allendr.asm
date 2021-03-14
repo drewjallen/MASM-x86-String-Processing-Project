@@ -89,7 +89,6 @@ main PROC
 	PUSH	convertedInput
 	CALL	WriteVal
 
-	mDisplayString OFFSET outputBuffer	
 
 
 	Invoke ExitProcess,0	; exit to operating system
@@ -134,6 +133,7 @@ ReadVal PROC
 			PUSH	EDX
 			MOV		EDX, 10
 			MUL		EDX
+			JO		_errorTryAgain
 			POP		EDX
 			ADD		EAX, EBX
 			JO		_errorTryAgain
