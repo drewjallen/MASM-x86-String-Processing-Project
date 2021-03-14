@@ -50,9 +50,12 @@ ENDM
 	goodbyeMessage		BYTE		"Thanks for playing! Goodbye.",0
 
 	userInputBuffer		BYTE		13 DUP(?)
+	reverseOutputBuffer	BYTE		13 DUP(?)
+	outputBuffer		BYTE		13 DUP(?)
 	userDigitsEntered	SDWORD		?
 	userArray			SDWORD		ARRAYSIZE DUP(?)
 	convertedInput		SDWORD		?
+	digitsCounted		SDWORD		?
 
 
 
@@ -79,9 +82,14 @@ main PROC
 		MOV		[EDI], EAX
 		ADD		EDI, 4
 		LOOP	_fillArrayLoop
-
+	
+	PUSH	OFFSET	digitsCounted ; EBP + 16
+	PUSH	OFFSET	outputBuffer
+	PUSH	OFFSET	reverseOutputBuffer
+	PUSH	convertedInput
 	CALL	WriteVal
 
+	mDisplayString OFFSET outputBuffer	
 
 
 	Invoke ExitProcess,0	; exit to operating system
@@ -156,10 +164,56 @@ ReadVal ENDP
 WriteVal PROC
 	PUSH	EBP
 	MOV		EBP, ESP
+	PUSHAD
 
+	MOV		ECX, 0
+	MOV		EAX, [EBP + 8]
+	MOV		EBX, 1
 
+	CMP		EAX, 0
+	JL		_negativeNumber
+	JMP		_notNegative
+
+	_negativeNumber:
+		MOV		EBX, -1
+		INC		ECX
+
+	_notNegative:
+		MOV		EDI, [EBP + 12]
+	
+	MOV		EDX, 0
+	MUL		EBX
+	PUSH	EBX
+	_conversionLoop:
+		MOV		EDX, 0
+		MOV		EBX, 10
+		DIV		EBX
+		PUSH	EAX
+		ADD		EDX, 48
+		MOV		EAX, EDX
+		STOSB
+		INC		ECX
+		POP		EAX
+		CMP		EAX, 0
+		JNE		_conversionLoop
+	POP		EBX
+	CMP		EBX, -1
+	JE		_addNegativeSign
+	JMP		_noNegativeSign
+
+	_addNegativeSign:
+		MOV		AL, 45
+		STOSB
+
+	_noNegativeSign:
+		PUSH	ECX
+		PUSH	[EBP + 16] ; REGULAR OUTPUT BUFFER
+		PUSH	[EBP + 12] ; REVERSE OUTPUT BUFFER
+		CALL	ReverseString
+
+	POPAD
 	POP		EBP
-	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		16 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 WriteVal ENDP
 
 DisplayList PROC
@@ -188,6 +242,29 @@ DisplayAverage PROC
 	POP		EBP
 	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 DisplayAverage ENDP
+
+ReverseString PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+	PUSHAD
+
+	MOV		ESI, [EBP+8] ;reverseBuffer OFFSET
+	MOV		EDI, [EBP +12] ;outputBuffer OFFSET
+	MOV		ECX, [EBP+16] ;length of reverseBuffer
+	ADD		ESI, ECX
+	DEC		ESI
+
+	_reverseLoop:
+		STD
+		LODSB
+		CLD
+		STOSB
+		LOOP	_reverseLoop
+	
+	POPAD
+	POP		EBP
+	RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ReverseString ENDP
 
 
 END main
