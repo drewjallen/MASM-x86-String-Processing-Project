@@ -28,7 +28,6 @@ mDisplayString MACRO storedArray
 	PUSH	EDX
 	MOV		EDX, storedArray
 	CALL	WriteString
-	CALL	CrLf
 	POP		EDX
 ENDM
 
@@ -48,6 +47,10 @@ ENDM
 	sumMessage			BYTE		"The sum is: ",0
 	averageMessage		BYTE		"The average is: ",0
 	goodbyeMessage		BYTE		"Thanks for playing! Goodbye.",0
+	spacing				BYTE		", ",0
+	testClear			BYTE		"blah blah blah",0
+
+
 
 	userInputBuffer		BYTE		13 DUP(?)
 	reverseOutputBuffer	BYTE		13 DUP(?)
@@ -61,6 +64,7 @@ ENDM
 
 .code
 main PROC
+
 	mDisplayString		OFFSET	openingTitle
 	mDisplayString		OFFSET	author
 	CALL	CrLf
@@ -83,12 +87,17 @@ main PROC
 		ADD		EDI, 4
 		LOOP	_fillArrayLoop
 	
-	PUSH	OFFSET	digitsCounted ; EBP + 16
-	PUSH	OFFSET	outputBuffer
-	PUSH	OFFSET	reverseOutputBuffer
-	PUSH	convertedInput
-	CALL	WriteVal
 
+	PUSH	LENGTHOF userArray ; EBP + 40
+	PUSH	LENGTHOF outputBuffer ; + 36
+	PUSH	LENGTHOF reverseOutputBuffer ; + 32
+	PUSH	OFFSET	spacing ; + 28
+	PUSH	OFFSET	listMessage ; + 24
+	PUSH	OFFSET	digitsCounted ; EBP + 20
+	PUSH	OFFSET	outputBuffer ; + 16
+	PUSH	OFFSET	reverseOutputBuffer ; +12
+	PUSH	OFFSET	userArray ; + 8
+	CALL	DisplayList
 
 
 	Invoke ExitProcess,0	; exit to operating system
@@ -98,7 +107,7 @@ ReadVal PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 	PUSHAD
-
+		
 	JMP	_try
 
 	_errorTryAgain:
@@ -167,7 +176,7 @@ WriteVal PROC
 	PUSHAD
 
 	MOV		ECX, 0
-	MOV		EAX, [EBP + 8]
+	MOV		EAX, [EBP + 8] ; integer value
 	MOV		EBX, 1
 
 	CMP		EAX, 0
@@ -179,7 +188,7 @@ WriteVal PROC
 		INC		ECX
 
 	_notNegative:
-		MOV		EDI, [EBP + 12]
+		MOV		EDI, [EBP + 12] ; reverse output
 	
 	MOV		EDX, 0
 	MUL		EBX
@@ -213,16 +222,45 @@ WriteVal PROC
 
 	POPAD
 	POP		EBP
-	RET		16 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 WriteVal ENDP
 
 DisplayList PROC
 	PUSH	EBP
 	MOV		EBP, ESP
+	PUSHAD
+
+	MOV		ECX, [EBP + 40]
+	MOV		ESI, [EBP + 8]
 
 
+	mDisplayString [EBP + 24] ; HEADER MESSAGE
+	CALL	CrLf
+
+	_displayLoop:
+		MOV		EAX, [ESI]
+		
+		PUSH	[EBP + 12] ; reverse buffer
+		PUSH	[EBP + 32] ; reverse length
+		CALL	ClearString
+
+		PUSH	[EBP + 16] ; OUTPUT BUFFER
+		PUSH	[EBP + 36] ; output buffer length
+		CALL	ClearString
+
+		PUSH	[EBP + 16]
+		PUSH	[EBP + 12]
+		PUSH	EAX
+		CALL	WriteVal
+		
+		mDisplayString [EBP + 16] ; OUTPUT BUFFER
+		mDisplayString [EBP + 28] ; SPACING
+		ADD		ESI, 4
+		LOOP	_displayLoop
+
+	POPAD
 	POP		EBP
-	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		36 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 DisplayList ENDP
 
 DisplaySum PROC
@@ -265,6 +303,25 @@ ReverseString PROC
 	POP		EBP
 	RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 ReverseString ENDP
+
+ClearString PROC
+	PUSH	EBP
+	MOV		EBP, ESP
+	PUSHAD
+
+	MOV		ECX, [EBP + 8];LENGTHOF BUFFER
+	MOV		EDI, [EBP + 12];BUFFER TO CLEAR
+	MOV		EBX, 0
+
+	_clearLoop:
+		MOV		[EDI], EBX
+		INC		EDI
+		LOOP	_clearLoop
+	
+	POPAD
+	POP		EBP
+	RET		8 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ClearString ENDP
 
 
 END main
