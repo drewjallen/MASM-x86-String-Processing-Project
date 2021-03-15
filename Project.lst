@@ -1,4 +1,4 @@
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 23:37:45
 <Project 6: String Primitives and Macros    (Proj6_Allendr.a  Page 1 - 1
 
 
@@ -33,7 +33,10 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
 			      C 
 
 				mGetString MACRO prompt, inputBuffer, inputLength, bytesRead
-					PUSHAD
+					PUSH	EDX
+					PUSH	ECX
+					PUSH	EAX
+					
 					MOV		EDX, prompt
 					CALL	WriteString
 
@@ -41,14 +44,18 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
 					MOV		ECX, inputLength
 					CALL	ReadString
 					MOV		bytesRead, EAX
-
-					POPAD
+					
+					POP		EAX
+					POP		ECX
+					POP		EDX
 				ENDM
 
 				mDisplayString MACRO storedArray
 					PUSH	EDX
+					
 					MOV		EDX, storedArray
 					CALL	WriteString
+					
 					POP		EDX
 				ENDM
 
@@ -146,27 +153,26 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
 	   47 6F 6F 64 62
 	   79 65 2E 00
  000001A7 2C 20 00			spacing				BYTE		", ",0
- 000001AA 62 6C 61 68 20		testClear			BYTE		"blah blah blah",0
-	   62 6C 61 68 20
-	   62 6C 61 68 00
 
 
 
- 000001B9  0000000D [			userInputBuffer		BYTE		13 DUP(?)
+ 000001AA  00000032 [			userInputBuffer		BYTE		50 DUP(?)
 	    00
 	   ]
- 000001C6  0000000D [			reverseOutputBuffer	BYTE		13 DUP(?)
+ 000001DC  00000032 [			reverseOutputBuffer	BYTE		50 DUP(?)
 	    00
 	   ]
- 000001D3  0000000D [			outputBuffer		BYTE		13 DUP(?)
+ 0000020E  00000032 [			outputBuffer		BYTE		50 DUP(?)
 	    00
 	   ]
- 000001E0 00000000			userDigitsEntered	SDWORD		?
- 000001E4  0000000A [			userArray			SDWORD		ARRAYSIZE DUP(?)
+ 00000240 00000000			userDigitsEntered	SDWORD		?
+ 00000244  0000000A [			userArray			SDWORD		ARRAYSIZE DUP(?)
 	    00000000
 	   ]
- 0000020C 00000000			convertedInput		SDWORD		?
- 00000210 00000000			digitsCounted		SDWORD		?
+ 0000026C 00000000			convertedInput		SDWORD		?
+ 00000270 00000000			digitsCounted		SDWORD		?
+ 00000274 00000000			sum					SDWORD		?
+ 00000278 00000000			average				SDWORD		?
 
 
 
@@ -194,288 +200,388 @@ Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
  0000002A  BA 00000087 R     1		MOV		EDX, OFFSET	instructionsTwo
  0000002F  E8 00000000 E     1		CALL	WriteString
  00000034  5A		     1		POP		EDX
+ 00000035  E8 00000000 E		CALL	CrLf
+ 0000003A  E8 00000000 E		CALL	CrLf
 						
- 00000035  B9 0000000A			MOV		ECX, ARRAYSIZE
- 0000003A  BF 000001E4 R		MOV		EDI, OFFSET userArray		
- 0000003F				_fillArrayLoop:
- 0000003F  B8 00000000				MOV		EAX, 0
- 00000044  FF 35 000001E0 R			PUSH	userDigitsEntered ; EBP + 28
- 0000004A  6A 0D				PUSH	SIZEOF userInputBuffer ; EBP + 24
- 0000004C  68 0000020C R			PUSH	OFFSET convertedInput	; EBP + 20
- 00000051  68 000000DB R			PUSH	OFFSET userPrompt ; EBP + 16 
- 00000056  68 000001B9 R			PUSH	OFFSET userInputBuffer ;EBP+12
- 0000005B  68 000000F4 R			PUSH	OFFSET errorMessage ; EBP+8
- 00000060  E8 0000003C				CALL	ReadVal
- 00000065  A1 0000020C R			MOV		EAX, convertedInput
- 0000006A  89 07				MOV		[EDI], EAX
- 0000006C  83 C7 04				ADD		EDI, 4
- 0000006F  E2 CE				LOOP	_fillArrayLoop
+ 0000003F  B9 0000000A			MOV		ECX, ARRAYSIZE
+ 00000044  BF 00000244 R		MOV		EDI, OFFSET userArray		
+ 00000049				_fillArrayLoop:
+ 00000049  B8 00000000				MOV		EAX, 0
+ 0000004E  FF 35 00000240 R			PUSH	userDigitsEntered ; EBP + 28
+ 00000054  6A 32				PUSH	SIZEOF userInputBuffer ; EBP + 24
+ 00000056  68 0000026C R			PUSH	OFFSET convertedInput	; EBP + 20
+ 0000005B  68 000000DB R			PUSH	OFFSET userPrompt ; EBP + 16 
+ 00000060  68 000001AA R			PUSH	OFFSET userInputBuffer ;EBP+12
+ 00000065  68 000000F4 R			PUSH	OFFSET errorMessage ; EBP+8
+ 0000006A  E8 0000007A				CALL	ReadVal
+ 0000006F  A1 0000026C R			MOV		EAX, convertedInput
+ 00000074  89 07				MOV		[EDI], EAX
+ 00000076  83 C7 04				ADD		EDI, 4
+ 00000079  E2 CE				LOOP	_fillArrayLoop
 					
 
- 00000071  6A 0A			PUSH	LENGTHOF userArray ; EBP + 40
- 00000073  6A 0D			PUSH	LENGTHOF outputBuffer ; + 36
- 00000075  6A 0D			PUSH	LENGTHOF reverseOutputBuffer ; + 32
- 00000077  68 000001A7 R		PUSH	OFFSET	spacing ; + 28
- 0000007C  68 00000149 R		PUSH	OFFSET	listMessage ; + 24
- 00000081  68 00000210 R		PUSH	OFFSET	digitsCounted ; EBP + 20
- 00000086  68 000001D3 R		PUSH	OFFSET	outputBuffer ; + 16
- 0000008B  68 000001C6 R		PUSH	OFFSET	reverseOutputBuffer ; +12
- 00000090  68 000001E4 R		PUSH	OFFSET	userArray ; + 8
- 00000095  E8 000000EA			CALL	DisplayList
+ 0000007B  6A 0A			PUSH	LENGTHOF userArray ; EBP + 40
+ 0000007D  6A 32			PUSH	LENGTHOF outputBuffer ; + 36
+ 0000007F  6A 32			PUSH	LENGTHOF reverseOutputBuffer ; + 32
+ 00000081  68 000001A7 R		PUSH	OFFSET	spacing ; + 28
+ 00000086  68 00000149 R		PUSH	OFFSET	listMessage ; + 24
+ 0000008B  68 00000270 R		PUSH	OFFSET	digitsCounted ; EBP + 20
+ 00000090  68 0000020E R		PUSH	OFFSET	outputBuffer ; + 16
+ 00000095  68 000001DC R		PUSH	OFFSET	reverseOutputBuffer ; +12
+ 0000009A  68 00000244 R		PUSH	OFFSET	userArray ; + 8
+ 0000009F  E8 0000012D			CALL	DisplayList
 
+ 000000A4  6A 32			PUSH	LENGTHOF outputBuffer
+ 000000A6  6A 32			PUSH	LENGTHOF reverseOutputBuffer
+ 000000A8  68 0000020E R		PUSH	OFFSET outputBuffer
+ 000000AD  68 000001DC R		PUSH	OFFSET reverseOutputBuffer
+ 000000B2  6A 0A			PUSH	LENGTHOF userArray ; + 16
+ 000000B4  68 0000016C R		PUSH	OFFSET sumMessage ; + 12
+ 000000B9  68 00000244 R		PUSH	OFFSET userArray ; + 8
+ 000000BE  E8 0000016E			CALL	DisplaySum
+
+ 000000C3  6A 32			PUSH	LENGTHOF outputBuffer
+ 000000C5  6A 32			PUSH	LENGTHOF reverseOutputBuffer
+ 000000C7  68 0000020E R		PUSH	OFFSET outputBuffer
+ 000000CC  68 000001DC R		PUSH	OFFSET reverseOutputBuffer
+ 000000D1  6A 0A			PUSH	LENGTHOF userArray ; + 16
+ 000000D3  68 00000179 R		PUSH	OFFSET averageMessage ; + 12
+ 000000D8  68 00000244 R		PUSH	OFFSET userArray ; + 8
+ 000000DD  E8 000001A8			CALL	DisplayAverage
 
 					Invoke ExitProcess,0	; exit to operating system
- 0000009A  6A 00	   *	    push   +000000000h
- 0000009C  E8 00000000 E   *	    call   ExitProcess
- 000000A1			main ENDP
+ 000000E2  6A 00	   *	    push   +000000000h
+ 000000E4  E8 00000000 E   *	    call   ExitProcess
+ 000000E9			main ENDP
 
- 000000A1			ReadVal PROC
- 000000A1  55				PUSH	EBP
- 000000A2  8B EC			MOV		EBP, ESP
- 000000A4  60				PUSHAD
+ 000000E9			ReadVal PROC
+ 000000E9  55				PUSH	EBP
+ 000000EA  8B EC			MOV		EBP, ESP
+ 000000EC  60				PUSHAD
 						
- 000000A5  EB 0A			JMP	_try
+ 000000ED  EB 0B			JMP	_try
 
- 000000A7				_errorTryAgain:
+ 000000EF				_errorTryAgain:
+ 000000EF  5A					POP		EDX
 						mDisplayString [EBP+8]
- 000000A7  52		     1		PUSH	EDX
- 000000A8  8B 55 08	     1		MOV		EDX, [EBP+8]
- 000000AB  E8 00000000 E     1		CALL	WriteString
- 000000B0  5A		     1		POP		EDX
- 000000B1				_try:
+ 000000F0  52		     1		PUSH	EDX
+ 000000F1  8B 55 08	     1		MOV		EDX, [EBP+8]
+ 000000F4  E8 00000000 E     1		CALL	WriteString
+ 000000F9  5A		     1		POP		EDX
+ 000000FA				_try:
 						mGetString [EBP+16], [EBP+12], [EBP+24], [EBP+28]
- 000000B1  60		     1		PUSHAD
- 000000B2  8B 55 10	     1		MOV		EDX, [EBP+16]
- 000000B5  E8 00000000 E     1		CALL	WriteString
- 000000BA  8B 55 0C	     1		MOV		EDX, [EBP+12]
- 000000BD  8B 4D 18	     1		MOV		ECX, [EBP+24]
- 000000C0  E8 00000000 E     1		CALL	ReadString
- 000000C5  89 45 1C	     1		MOV		[EBP+28], EAX
- 000000C8  61		     1		POPAD
+ 000000FA  52		     1		PUSH	EDX
+ 000000FB  51		     1		PUSH	ECX
+ 000000FC  50		     1		PUSH	EAX
+ 000000FD  8B 55 10	     1		MOV		EDX, [EBP+16]
+ 00000100  E8 00000000 E     1		CALL	WriteString
+ 00000105  8B 55 0C	     1		MOV		EDX, [EBP+12]
+ 00000108  8B 4D 18	     1		MOV		ECX, [EBP+24]
+ 0000010B  E8 00000000 E     1		CALL	ReadString
+ 00000110  89 45 1C	     1		MOV		[EBP+28], EAX
+ 00000113  58		     1		POP		EAX
+ 00000114  59		     1		POP		ECX
+ 00000115  5A		     1		POP		EDX
 
 
- 000000C9  8B 75 0C			MOV		ESI, [EBP+12]
- 000000CC  8B 4D 1C			MOV		ECX, [EBP+28]
- 000000CF  B8 00000000			MOV		EAX, 0
- 000000D4  BA 00000000			MOV		EDX, 0 ; DX == 1: number is negative. == 0: positive. save until end and use to decide of IMUL needed on final number
- 000000D9				_conversionLoop:
- 000000D9  50					PUSH	EAX
- 000000DA  AC					LODSB
- 000000DB  BB 00000000				MOV		EBX, 0
- 000000E0  8A D8				MOV		BL, AL
- 000000E2  58					POP		EAX
+ 00000116  8B 75 0C			MOV		ESI, [EBP+12]
+ 00000119  8B 4D 1C			MOV		ECX, [EBP+28]
+ 0000011C  B8 00000000			MOV		EAX, 0
+ 00000121  BA 00000000			MOV		EDX, 0 ; DX == 1: number is negative. == 0: positive. save until end and use to decide of IMUL needed on final number
+ 00000126				_conversionLoop:
+ 00000126  50					PUSH	EAX
+ 00000127  AC					LODSB
+ 00000128  BB 00000000				MOV		EBX, 0
+ 0000012D  8A D8				MOV		BL, AL
+ 0000012F  58					POP		EAX
 						
- 000000E3  83 FB 2B				CMP		EBX, 43
- 000000E6  74 28				JE		_skipToEnd
- 000000E8  83 FB 2D				CMP		EBX, 45
- 000000EB  74 1E				JE		_skipToEndNegative
+ 00000130  83 FB 2B				CMP		EBX, 43
+ 00000133  74 28				JE		_skipToEnd
+ 00000135  83 FB 2D				CMP		EBX, 45
+ 00000138  74 1E				JE		_skipToEndNegative
 
- 000000ED					_notSignSymbol:
- 000000ED  83 FB 30					CMP		EBX, 48
- 000000F0  7C B5					JL		_errorTryAgain
- 000000F2  83 FB 39					CMP		EBX, 57
- 000000F5  7F B0					JG		_errorTryAgain
+ 0000013A					_notSignSymbol:
+ 0000013A  83 FB 30					CMP		EBX, 48
+ 0000013D  7C B0					JL		_errorTryAgain
+ 0000013F  83 FB 39					CMP		EBX, 57
+ 00000142  7F AB					JG		_errorTryAgain
 
- 000000F7  83 EB 30					SUB		EBX, 48
- 000000FA  52						PUSH	EDX
- 000000FB  BA 0000000A					MOV		EDX, 10
- 00000100  F7 E2					MUL		EDX
- 00000102  70 A3					JO		_errorTryAgain
- 00000104  5A						POP		EDX
- 00000105  03 C3					ADD		EAX, EBX
- 00000107  70 9E					JO		_errorTryAgain
- 00000109  EB 05					JMP		_skipToEnd
+ 00000144  83 EB 30					SUB		EBX, 48
+ 00000147  52						PUSH	EDX
+ 00000148  BA 0000000A					MOV		EDX, 10
+ 0000014D  F7 E2					MUL		EDX
+ 0000014F  70 9E					JO		_errorTryAgain
+ 00000151  03 C3					ADD		EAX, EBX
+ 00000153  70 9A					JO		_errorTryAgain
+ 00000155  5A						POP		EDX
+ 00000156  EB 05					JMP		_skipToEnd
 
- 0000010B					_skipToEndNegative:
- 0000010B  BA FFFFFFFF					MOV		EDX, -1
+ 00000158					_skipToEndNegative:
+ 00000158  BA FFFFFFFF					MOV		EDX, -1
 						
- 00000110					_skipToEnd:
- 00000110  E2 C7				LOOP _conversionLoop
+ 0000015D					_skipToEnd:
+ 0000015D  E2 C7				LOOP _conversionLoop
 
- 00000112  83 FA FF			CMP		EDX, -1
- 00000115  74 02			JE		_makeNegative
- 00000117  EB 02			JMP		_notNegative
+ 0000015F  83 FA FF			CMP		EDX, -1
+ 00000162  74 02			JE		_makeNegative
+ 00000164  EB 02			JMP		_notNegative
 
- 00000119				_makeNegative:
- 00000119  F7 E2				MUL		EDX
+ 00000166				_makeNegative:
+ 00000166  F7 E2				MUL		EDX
 
- 0000011B				_notNegative:
- 0000011B  8B 5D 14				MOV		EBX, [EBP+20]
- 0000011E  89 03				MOV		[EBX], EAX
+ 00000168				_notNegative:
+ 00000168  8B 5D 14				MOV		EBX, [EBP+20]
+ 0000016B  89 03				MOV		[EBX], EAX
 					
- 00000120  61				POPAD
- 00000121  5D				POP		EBP
- 00000122  C2 0018			RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 00000125			ReadVal ENDP
+ 0000016D  61				POPAD
+ 0000016E  5D				POP		EBP
+ 0000016F  C2 0018			RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 00000172			ReadVal ENDP
 
- 00000125			WriteVal PROC
- 00000125  55				PUSH	EBP
- 00000126  8B EC			MOV		EBP, ESP
- 00000128  60				PUSHAD
+ 00000172			WriteVal PROC
+ 00000172  55				PUSH	EBP
+ 00000173  8B EC			MOV		EBP, ESP
+ 00000175  60				PUSHAD
 
- 00000129  B9 00000000			MOV		ECX, 0
- 0000012E  8B 45 08			MOV		EAX, [EBP + 8] ; integer value
- 00000131  BB 00000001			MOV		EBX, 1
+ 00000176  B9 00000000			MOV		ECX, 0
+ 0000017B  8B 45 08			MOV		EAX, [EBP + 8] ; integer value
+ 0000017E  BB 00000001			MOV		EBX, 1
 
- 00000136  83 F8 00			CMP		EAX, 0
- 00000139  7C 02			JL		_negativeNumber
- 0000013B  EB 06			JMP		_notNegative
+ 00000183  83 F8 00			CMP		EAX, 0
+ 00000186  7C 02			JL		_negativeNumber
+ 00000188  EB 06			JMP		_notNegative
 
- 0000013D				_negativeNumber:
- 0000013D  BB FFFFFFFF				MOV		EBX, -1
- 00000142  41					INC		ECX
+ 0000018A				_negativeNumber:
+ 0000018A  BB FFFFFFFF				MOV		EBX, -1
+ 0000018F  41					INC		ECX
 
- 00000143				_notNegative:
- 00000143  8B 7D 0C				MOV		EDI, [EBP + 12] ; reverse output
+ 00000190				_notNegative:
+ 00000190  8B 7D 0C				MOV		EDI, [EBP + 12] ; reverse output
 					
- 00000146  BA 00000000			MOV		EDX, 0
- 0000014B  F7 E3			MUL		EBX
- 0000014D  53				PUSH	EBX
- 0000014E				_conversionLoop:
- 0000014E  BA 00000000				MOV		EDX, 0
- 00000153  BB 0000000A				MOV		EBX, 10
- 00000158  F7 F3				DIV		EBX
- 0000015A  50					PUSH	EAX
- 0000015B  83 C2 30				ADD		EDX, 48
- 0000015E  8B C2				MOV		EAX, EDX
- 00000160  AA					STOSB
- 00000161  41					INC		ECX
- 00000162  58					POP		EAX
- 00000163  83 F8 00				CMP		EAX, 0
- 00000166  75 E6				JNE		_conversionLoop
- 00000168  5B				POP		EBX
- 00000169  83 FB FF			CMP		EBX, -1
- 0000016C  74 02			JE		_addNegativeSign
- 0000016E  EB 03			JMP		_noNegativeSign
+ 00000193  BA 00000000			MOV		EDX, 0
+ 00000198  F7 E3			MUL		EBX
+ 0000019A  53				PUSH	EBX
+ 0000019B				_conversionLoop:
+ 0000019B  BA 00000000				MOV		EDX, 0
+ 000001A0  BB 0000000A				MOV		EBX, 10
+ 000001A5  F7 F3				DIV		EBX
+ 000001A7  50					PUSH	EAX
+ 000001A8  83 C2 30				ADD		EDX, 48
+ 000001AB  8B C2				MOV		EAX, EDX
+ 000001AD  AA					STOSB
+ 000001AE  41					INC		ECX
+ 000001AF  58					POP		EAX
+ 000001B0  83 F8 00				CMP		EAX, 0
+ 000001B3  75 E6				JNE		_conversionLoop
+ 000001B5  5B				POP		EBX
+ 000001B6  83 FB FF			CMP		EBX, -1
+ 000001B9  74 02			JE		_addNegativeSign
+ 000001BB  EB 03			JMP		_noNegativeSign
 
- 00000170				_addNegativeSign:
- 00000170  B0 2D				MOV		AL, 45
- 00000172  AA					STOSB
+ 000001BD				_addNegativeSign:
+ 000001BD  B0 2D				MOV		AL, 45
+ 000001BF  AA					STOSB
 
- 00000173				_noNegativeSign:
- 00000173  51					PUSH	ECX
- 00000174  FF 75 10				PUSH	[EBP + 16] ; REGULAR OUTPUT BUFFER
- 00000177  FF 75 0C				PUSH	[EBP + 12] ; REVERSE OUTPUT BUFFER
- 0000017A  E8 0000006A				CALL	ReverseString
+ 000001C0				_noNegativeSign:
+ 000001C0  51					PUSH	ECX
+ 000001C1  FF 75 10				PUSH	[EBP + 16] ; REGULAR OUTPUT BUFFER
+ 000001C4  FF 75 0C				PUSH	[EBP + 12] ; REVERSE OUTPUT BUFFER
+ 000001C7  E8 00000128				CALL	ReverseString
 
- 0000017F  61				POPAD
- 00000180  5D				POP		EBP
- 00000181  C2 000C			RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 00000184			WriteVal ENDP
+ 000001CC  61				POPAD
+ 000001CD  5D				POP		EBP
+ 000001CE  C2 000C			RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 000001D1			WriteVal ENDP
 
- 00000184			DisplayList PROC
- 00000184  55				PUSH	EBP
- 00000185  8B EC			MOV		EBP, ESP
- 00000187  60				PUSHAD
+ 000001D1			DisplayList PROC
+ 000001D1  55				PUSH	EBP
+ 000001D2  8B EC			MOV		EBP, ESP
+ 000001D4  60				PUSHAD
 
- 00000188  8B 4D 28			MOV		ECX, [EBP + 40]
- 0000018B  8B 75 08			MOV		ESI, [EBP + 8]
+ 000001D5  8B 4D 28			MOV		ECX, [EBP + 40]
+ 000001D8  8B 75 08			MOV		ESI, [EBP + 8]
 
-
+ 000001DB  E8 00000000 E		CALL	CrLf
 					mDisplayString [EBP + 24] ; HEADER MESSAGE
- 0000018E  52		     1		PUSH	EDX
- 0000018F  8B 55 18	     1		MOV		EDX, [EBP + 24]
- 00000192  E8 00000000 E     1		CALL	WriteString
- 00000197  5A		     1		POP		EDX
- 00000198  E8 00000000 E		CALL	CrLf
+ 000001E0  52		     1		PUSH	EDX
+ 000001E1  8B 55 18	     1		MOV		EDX, [EBP + 24]
+ 000001E4  E8 00000000 E     1		CALL	WriteString
+ 000001E9  5A		     1		POP		EDX
+ 000001EA  E8 00000000 E		CALL	CrLf
 
- 0000019D				_displayLoop:
- 0000019D  8B 06				MOV		EAX, [ESI]
+ 000001EF				_displayLoop:
+ 000001EF  8B 06				MOV		EAX, [ESI]
 						
- 0000019F  FF 75 0C				PUSH	[EBP + 12] ; reverse buffer
- 000001A2  FF 75 20				PUSH	[EBP + 32] ; reverse length
- 000001A5  E8 0000005A				CALL	ClearString
+ 000001F1  FF 75 0C				PUSH	[EBP + 12] ; reverse buffer
+ 000001F4  FF 75 20				PUSH	[EBP + 32] ; reverse length
+ 000001F7  E8 00000113				CALL	ClearString
 
- 000001AA  FF 75 10				PUSH	[EBP + 16] ; OUTPUT BUFFER
- 000001AD  FF 75 24				PUSH	[EBP + 36] ; output buffer length
- 000001B0  E8 0000004F				CALL	ClearString
+ 000001FC  FF 75 10				PUSH	[EBP + 16] ; OUTPUT BUFFER
+ 000001FF  FF 75 24				PUSH	[EBP + 36] ; output buffer length
+ 00000202  E8 00000108				CALL	ClearString
 
- 000001B5  FF 75 10				PUSH	[EBP + 16]
- 000001B8  FF 75 0C				PUSH	[EBP + 12]
- 000001BB  50					PUSH	EAX
- 000001BC  E8 FFFFFF64				CALL	WriteVal
+ 00000207  FF 75 10				PUSH	[EBP + 16]
+ 0000020A  FF 75 0C				PUSH	[EBP + 12]
+ 0000020D  50					PUSH	EAX
+ 0000020E  E8 FFFFFF5F				CALL	WriteVal
 						
 						mDisplayString [EBP + 16] ; OUTPUT BUFFER
- 000001C1  52		     1		PUSH	EDX
- 000001C2  8B 55 10	     1		MOV		EDX, [EBP + 16]
- 000001C5  E8 00000000 E     1		CALL	WriteString
- 000001CA  5A		     1		POP		EDX
+ 00000213  52		     1		PUSH	EDX
+ 00000214  8B 55 10	     1		MOV		EDX, [EBP + 16]
+ 00000217  E8 00000000 E     1		CALL	WriteString
+ 0000021C  5A		     1		POP		EDX
 						mDisplayString [EBP + 28] ; SPACING
- 000001CB  52		     1		PUSH	EDX
- 000001CC  8B 55 1C	     1		MOV		EDX, [EBP + 28]
- 000001CF  E8 00000000 E     1		CALL	WriteString
- 000001D4  5A		     1		POP		EDX
- 000001D5  83 C6 04				ADD		ESI, 4
- 000001D8  E2 C3				LOOP	_displayLoop
+ 0000021D  52		     1		PUSH	EDX
+ 0000021E  8B 55 1C	     1		MOV		EDX, [EBP + 28]
+ 00000221  E8 00000000 E     1		CALL	WriteString
+ 00000226  5A		     1		POP		EDX
+ 00000227  83 C6 04				ADD		ESI, 4
+ 0000022A  E2 C3				LOOP	_displayLoop
 
- 000001DA  61				POPAD
- 000001DB  5D				POP		EBP
- 000001DC  C2 0024			RET		36 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 000001DF			DisplayList ENDP
+ 0000022C  61				POPAD
+ 0000022D  5D				POP		EBP
+ 0000022E  C2 0024			RET		36 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 00000231			DisplayList ENDP
 
- 000001DF			DisplaySum PROC
- 000001DF  55				PUSH	EBP
- 000001E0  8B EC			MOV		EBP, ESP
+ 00000231			DisplaySum PROC
+ 00000231  55				PUSH	EBP
+ 00000232  8B EC			MOV		EBP, ESP
 
+ 00000234  FF 75 14			PUSH	[EBP + 20]
+ 00000237  FF 75 1C			PUSH	[EBP + 28]
+ 0000023A  E8 000000D0			CALL	ClearString
 
- 000001E2  5D				POP		EBP
- 000001E3  C3				RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 000001E4			DisplaySum ENDP
+ 0000023F  FF 75 18			PUSH	[EBP + 24]
+ 00000242  FF 75 20			PUSH	[EBP + 32]
+ 00000245  E8 000000C5			CALL	ClearString
 
- 000001E4			DisplayAverage PROC
- 000001E4  55				PUSH	EBP
- 000001E5  8B EC			MOV		EBP, ESP
+ 0000024A  B8 00000000			MOV		EAX, 0
+ 0000024F  8B 75 08			MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+ 00000252  8B 4D 10			MOV		ECX, [EBP + 16]
 
-
- 000001E7  5D				POP		EBP
- 000001E8  C3				RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 000001E9			DisplayAverage ENDP
-
- 000001E9			ReverseString PROC
- 000001E9  55				PUSH	EBP
- 000001EA  8B EC			MOV		EBP, ESP
- 000001EC  60				PUSHAD
-
- 000001ED  8B 75 08			MOV		ESI, [EBP+8] ;reverseBuffer OFFSET
- 000001F0  8B 7D 0C			MOV		EDI, [EBP +12] ;outputBuffer OFFSET
- 000001F3  8B 4D 10			MOV		ECX, [EBP+16] ;length of reverseBuffer
- 000001F6  03 F1			ADD		ESI, ECX
- 000001F8  4E				DEC		ESI
-
- 000001F9				_reverseLoop:
- 000001F9  FD					STD
- 000001FA  AC					LODSB
- 000001FB  FC					CLD
- 000001FC  AA					STOSB
- 000001FD  E2 FA				LOOP	_reverseLoop
+ 00000255				_sumLoop:
+ 00000255  03 06				ADD		EAX, [ESI]
+ 00000257  83 C6 04				ADD		ESI, 4
+ 0000025A  E2 F9				LOOP	_sumLoop
 					
- 000001FF  61				POPAD
- 00000200  5D				POP		EBP
- 00000201  C2 000C			RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 00000204			ReverseString ENDP
+ 0000025C  FF 75 18			PUSH	[EBP + 24]
+ 0000025F  FF 75 14			PUSH	[EBP + 20]
+ 00000262  50				PUSH	EAX
+ 00000263  E8 FFFFFF0A			CALL	WriteVal
 
- 00000204			ClearString PROC
- 00000204  55				PUSH	EBP
- 00000205  8B EC			MOV		EBP, ESP
- 00000207  60				PUSHAD
+ 00000268  E8 00000000 E		CALL	CrLf
+ 0000026D  E8 00000000 E		CALL	CrLf
+					mDisplayString [EBP + 12]
+ 00000272  52		     1		PUSH	EDX
+ 00000273  8B 55 0C	     1		MOV		EDX, [EBP + 12]
+ 00000276  E8 00000000 E     1		CALL	WriteString
+ 0000027B  5A		     1		POP		EDX
+					mDisplayString [EBP + 24]
+ 0000027C  52		     1		PUSH	EDX
+ 0000027D  8B 55 18	     1		MOV		EDX, [EBP + 24]
+ 00000280  E8 00000000 E     1		CALL	WriteString
+ 00000285  5A		     1		POP		EDX
 
- 00000208  8B 4D 08			MOV		ECX, [EBP + 8];LENGTHOF BUFFER
- 0000020B  8B 7D 0C			MOV		EDI, [EBP + 12];BUFFER TO CLEAR
- 0000020E  BB 00000000			MOV		EBX, 0
+ 00000286  5D				POP		EBP
+ 00000287  C2 001C			RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 0000028A			DisplaySum ENDP
 
- 00000213				_clearLoop:
- 00000213  89 1F				MOV		[EDI], EBX
- 00000215  47					INC		EDI
- 00000216  E2 FB				LOOP	_clearLoop
+ 0000028A			DisplayAverage PROC
+ 0000028A  55				PUSH	EBP
+ 0000028B  8B EC			MOV		EBP, ESP
+ 0000028D  60				PUSHAD
+
+
+ 0000028E  FF 75 14			PUSH	[EBP + 20]
+ 00000291  FF 75 1C			PUSH	[EBP + 28]
+ 00000294  E8 00000076			CALL	ClearString
+
+ 00000299  FF 75 18			PUSH	[EBP + 24]
+ 0000029C  FF 75 20			PUSH	[EBP + 32]
+ 0000029F  E8 0000006B			CALL	ClearString
+
+ 000002A4  B8 00000000			MOV		EAX, 0
+ 000002A9  8B 75 08			MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+ 000002AC  8B 4D 10			MOV		ECX, [EBP + 16]
+
+ 000002AF				_sumLoop:
+ 000002AF  03 06				ADD		EAX, [ESI]
+ 000002B1  83 C6 04				ADD		ESI, 4
+ 000002B4  E2 F9				LOOP	_sumLoop
 					
- 00000218  61				POPAD
- 00000219  5D				POP		EBP
- 0000021A  C2 0008			RET		8 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
- 0000021D			ClearString ENDP
+ 000002B6  BA 00000000			MOV		EDX, 0
+ 000002BB  8B 5D 10			MOV		EBX, [EBP + 16]
+ 000002BE  F7 FB			IDIV	EBX
+
+ 000002C0  FF 75 18			PUSH	[EBP + 24]
+ 000002C3  FF 75 14			PUSH	[EBP + 20]
+ 000002C6  50				PUSH	EAX
+ 000002C7  E8 FFFFFEA6			CALL	WriteVal
+
+ 000002CC  E8 00000000 E		CALL	CrLf
+ 000002D1  E8 00000000 E		CALL	CrLf
+					mDisplayString [EBP + 12]
+ 000002D6  52		     1		PUSH	EDX
+ 000002D7  8B 55 0C	     1		MOV		EDX, [EBP + 12]
+ 000002DA  E8 00000000 E     1		CALL	WriteString
+ 000002DF  5A		     1		POP		EDX
+					mDisplayString [EBP + 24]
+ 000002E0  52		     1		PUSH	EDX
+ 000002E1  8B 55 18	     1		MOV		EDX, [EBP + 24]
+ 000002E4  E8 00000000 E     1		CALL	WriteString
+ 000002E9  5A		     1		POP		EDX
+ 000002EA  E8 00000000 E		CALL	CrLf
+
+ 000002EF  61				POPAD
+ 000002F0  5D				POP		EBP
+ 000002F1  C2 001C			RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 000002F4			DisplayAverage ENDP
+
+ 000002F4			ReverseString PROC
+ 000002F4  55				PUSH	EBP
+ 000002F5  8B EC			MOV		EBP, ESP
+ 000002F7  60				PUSHAD
+
+ 000002F8  8B 75 08			MOV		ESI, [EBP+8] ;reverseBuffer OFFSET
+ 000002FB  8B 7D 0C			MOV		EDI, [EBP +12] ;outputBuffer OFFSET
+ 000002FE  8B 4D 10			MOV		ECX, [EBP+16] ;length of reverseBuffer
+ 00000301  03 F1			ADD		ESI, ECX
+ 00000303  4E				DEC		ESI
+
+ 00000304				_reverseLoop:
+ 00000304  FD					STD
+ 00000305  AC					LODSB
+ 00000306  FC					CLD
+ 00000307  AA					STOSB
+ 00000308  E2 FA				LOOP	_reverseLoop
+					
+ 0000030A  61				POPAD
+ 0000030B  5D				POP		EBP
+ 0000030C  C2 000C			RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 0000030F			ReverseString ENDP
+
+ 0000030F			ClearString PROC
+ 0000030F  55				PUSH	EBP
+ 00000310  8B EC			MOV		EBP, ESP
+ 00000312  60				PUSHAD
+
+ 00000313  8B 4D 08			MOV		ECX, [EBP + 8];LENGTHOF BUFFER
+ 00000316  8B 7D 0C			MOV		EDI, [EBP + 12];BUFFER TO CLEAR
+ 00000319  BB 00000000			MOV		EBX, 0
+
+ 0000031E				_clearLoop:
+ 0000031E  89 1F				MOV		[EDI], EBX
+ 00000320  47					INC		EDI
+ 00000321  E2 FB				LOOP	_clearLoop
+					
+ 00000323  61				POPAD
+ 00000324  5D				POP		EBP
+ 00000325  C2 0008			RET		8 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+ 00000328			ClearString ENDP
 
 
 				END main
-Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 21:43:39
+Microsoft (R) Macro Assembler Version 14.28.29335.0	    03/14/21 23:37:45
 <Project 6: String Primitives and Macros    (Proj6_Allendr.a  Symbols 2 - 1
 
 
@@ -577,16 +683,16 @@ Segments and Groups:
 
 FLAT . . . . . . . . . . . . . .	GROUP
 STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
-_DATA  . . . . . . . . . . . . .	32 Bit	 00000214 Para	  Public  'DATA'	
-_TEXT  . . . . . . . . . . . . .	32 Bit	 0000021D Para	  Public  'CODE'	
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000027C Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000328 Para	  Public  'CODE'	
 
 
 Procedures, parameters, and locals:
 
                 N a m e                 Type     Value    Attr
 
-ClearString  . . . . . . . . . .	P Near	 00000204 _TEXT	Length= 00000019 Public STDCALL
-  _clearLoop . . . . . . . . . .	L Near	 00000213 _TEXT	
+ClearString  . . . . . . . . . .	P Near	 0000030F _TEXT	Length= 00000019 Public STDCALL
+  _clearLoop . . . . . . . . . .	L Near	 0000031E _TEXT	
 CloseFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 Clrscr . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -594,10 +700,12 @@ CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-DisplayAverage . . . . . . . . .	P Near	 000001E4 _TEXT	Length= 00000005 Public STDCALL
-DisplayList  . . . . . . . . . .	P Near	 00000184 _TEXT	Length= 0000005B Public STDCALL
-  _displayLoop . . . . . . . . .	L Near	 0000019D _TEXT	
-DisplaySum . . . . . . . . . . .	P Near	 000001DF _TEXT	Length= 00000005 Public STDCALL
+DisplayAverage . . . . . . . . .	P Near	 0000028A _TEXT	Length= 0000006A Public STDCALL
+  _sumLoop . . . . . . . . . . .	L Near	 000002AF _TEXT	
+DisplayList  . . . . . . . . . .	P Near	 000001D1 _TEXT	Length= 00000060 Public STDCALL
+  _displayLoop . . . . . . . . .	L Near	 000001EF _TEXT	
+DisplaySum . . . . . . . . . . .	P Near	 00000231 _TEXT	Length= 00000059 Public STDCALL
+  _sumLoop . . . . . . . . . . .	L Near	 00000255 _TEXT	
 DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -654,17 +762,17 @@ ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-ReadVal  . . . . . . . . . . . .	P Near	 000000A1 _TEXT	Length= 00000084 Public STDCALL
-  _errorTryAgain . . . . . . . .	L Near	 000000A7 _TEXT	
-  _try . . . . . . . . . . . . .	L Near	 000000B1 _TEXT	
-  _conversionLoop  . . . . . . .	L Near	 000000D9 _TEXT	
-  _notSignSymbol . . . . . . . .	L Near	 000000ED _TEXT	
-  _skipToEndNegative . . . . . .	L Near	 0000010B _TEXT	
-  _skipToEnd . . . . . . . . . .	L Near	 00000110 _TEXT	
-  _makeNegative  . . . . . . . .	L Near	 00000119 _TEXT	
-  _notNegative . . . . . . . . .	L Near	 0000011B _TEXT	
-ReverseString  . . . . . . . . .	P Near	 000001E9 _TEXT	Length= 0000001B Public STDCALL
-  _reverseLoop . . . . . . . . .	L Near	 000001F9 _TEXT	
+ReadVal  . . . . . . . . . . . .	P Near	 000000E9 _TEXT	Length= 00000089 Public STDCALL
+  _errorTryAgain . . . . . . . .	L Near	 000000EF _TEXT	
+  _try . . . . . . . . . . . . .	L Near	 000000FA _TEXT	
+  _conversionLoop  . . . . . . .	L Near	 00000126 _TEXT	
+  _notSignSymbol . . . . . . . .	L Near	 0000013A _TEXT	
+  _skipToEndNegative . . . . . .	L Near	 00000158 _TEXT	
+  _skipToEnd . . . . . . . . . .	L Near	 0000015D _TEXT	
+  _makeNegative  . . . . . . . .	L Near	 00000166 _TEXT	
+  _notNegative . . . . . . . . .	L Near	 00000168 _TEXT	
+ReverseString  . . . . . . . . .	P Near	 000002F4 _TEXT	Length= 0000001B Public STDCALL
+  _reverseLoop . . . . . . . . .	L Near	 00000304 _TEXT	
 SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
@@ -701,15 +809,15 @@ WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External
 WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
 WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-WriteVal . . . . . . . . . . . .	P Near	 00000125 _TEXT	Length= 0000005F Public STDCALL
-  _negativeNumber  . . . . . . .	L Near	 0000013D _TEXT	
-  _notNegative . . . . . . . . .	L Near	 00000143 _TEXT	
-  _conversionLoop  . . . . . . .	L Near	 0000014E _TEXT	
-  _addNegativeSign . . . . . . .	L Near	 00000170 _TEXT	
-  _noNegativeSign  . . . . . . .	L Near	 00000173 _TEXT	
+WriteVal . . . . . . . . . . . .	P Near	 00000172 _TEXT	Length= 0000005F Public STDCALL
+  _negativeNumber  . . . . . . .	L Near	 0000018A _TEXT	
+  _notNegative . . . . . . . . .	L Near	 00000190 _TEXT	
+  _conversionLoop  . . . . . . .	L Near	 0000019B _TEXT	
+  _addNegativeSign . . . . . . .	L Near	 000001BD _TEXT	
+  _noNegativeSign  . . . . . . .	L Near	 000001C0 _TEXT	
 WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
-main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000A1 Public STDCALL
-  _fillArrayLoop . . . . . . . .	L Near	 0000003F _TEXT	
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 000000E9 Public STDCALL
+  _fillArrayLoop . . . . . . . .	L Near	 00000049 _TEXT	
 printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
 wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
@@ -931,12 +1039,13 @@ WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
 WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
 author . . . . . . . . . . . . .	Byte	 00000028 _DATA	
 averageMessage . . . . . . . . .	Byte	 00000179 _DATA	
+average  . . . . . . . . . . . .	DWord	 00000278 _DATA	
 black  . . . . . . . . . . . . .	Number	 00000000h   
 blue . . . . . . . . . . . . . .	Number	 00000001h   
 brown  . . . . . . . . . . . . .	Number	 00000006h   
-convertedInput . . . . . . . . .	DWord	 0000020C _DATA	
+convertedInput . . . . . . . . .	DWord	 0000026C _DATA	
 cyan . . . . . . . . . . . . . .	Number	 00000003h   
-digitsCounted  . . . . . . . . .	DWord	 00000210 _DATA	
+digitsCounted  . . . . . . . . .	DWord	 00000270 _DATA	
 errorMessage . . . . . . . . . .	Byte	 000000F4 _DATA	
 exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
 goodbyeMessage . . . . . . . . .	Byte	 0000018A _DATA	
@@ -953,16 +1062,16 @@ lightRed . . . . . . . . . . . .	Number	 0000000Ch
 listMessage  . . . . . . . . . .	Byte	 00000149 _DATA	
 magenta  . . . . . . . . . . . .	Number	 00000005h   
 openingTitle . . . . . . . . . .	Byte	 00000000 _DATA	
-outputBuffer . . . . . . . . . .	Byte	 000001D3 _DATA	
+outputBuffer . . . . . . . . . .	Byte	 0000020E _DATA	
 red  . . . . . . . . . . . . . .	Number	 00000004h   
-reverseOutputBuffer  . . . . . .	Byte	 000001C6 _DATA	
+reverseOutputBuffer  . . . . . .	Byte	 000001DC _DATA	
 spacing  . . . . . . . . . . . .	Byte	 000001A7 _DATA	
 sumMessage . . . . . . . . . . .	Byte	 0000016C _DATA	
-testClear  . . . . . . . . . . .	Byte	 000001AA _DATA	
+sum  . . . . . . . . . . . . . .	DWord	 00000274 _DATA	
 tryAgainPrompt . . . . . . . . .	Byte	 00000136 _DATA	
-userArray  . . . . . . . . . . .	DWord	 000001E4 _DATA	
-userDigitsEntered  . . . . . . .	DWord	 000001E0 _DATA	
-userInputBuffer  . . . . . . . .	Byte	 000001B9 _DATA	
+userArray  . . . . . . . . . . .	DWord	 00000244 _DATA	
+userDigitsEntered  . . . . . . .	DWord	 00000240 _DATA	
+userInputBuffer  . . . . . . . .	Byte	 000001AA _DATA	
 userPrompt . . . . . . . . . . .	Byte	 000000DB _DATA	
 white  . . . . . . . . . . . . .	Number	 0000000Fh   
 wsprintf . . . . . . . . . . . .	Text   	 wsprintfA

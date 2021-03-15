@@ -12,7 +12,10 @@ TITLE Project 6: String Primitives and Macros    (Proj6_Allendr.asm)
 INCLUDE Irvine32.inc
 
 mGetString MACRO prompt, inputBuffer, inputLength, bytesRead
-	PUSHAD
+	PUSH	EDX
+	PUSH	ECX
+	PUSH	EAX
+	
 	MOV		EDX, prompt
 	CALL	WriteString
 
@@ -20,14 +23,18 @@ mGetString MACRO prompt, inputBuffer, inputLength, bytesRead
 	MOV		ECX, inputLength
 	CALL	ReadString
 	MOV		bytesRead, EAX
-
-	POPAD
+	
+	POP		EAX
+	POP		ECX
+	POP		EDX
 ENDM
 
 mDisplayString MACRO storedArray
 	PUSH	EDX
+	
 	MOV		EDX, storedArray
 	CALL	WriteString
+	
 	POP		EDX
 ENDM
 
@@ -48,17 +55,18 @@ ENDM
 	averageMessage		BYTE		"The average is: ",0
 	goodbyeMessage		BYTE		"Thanks for playing! Goodbye.",0
 	spacing				BYTE		", ",0
-	testClear			BYTE		"blah blah blah",0
 
 
 
-	userInputBuffer		BYTE		13 DUP(?)
-	reverseOutputBuffer	BYTE		13 DUP(?)
-	outputBuffer		BYTE		13 DUP(?)
+	userInputBuffer		BYTE		50 DUP(?)
+	reverseOutputBuffer	BYTE		50 DUP(?)
+	outputBuffer		BYTE		50 DUP(?)
 	userDigitsEntered	SDWORD		?
 	userArray			SDWORD		ARRAYSIZE DUP(?)
 	convertedInput		SDWORD		?
 	digitsCounted		SDWORD		?
+	sum					SDWORD		?
+	average				SDWORD		?
 
 
 
@@ -70,6 +78,8 @@ main PROC
 	CALL	CrLf
 	mDisplayString		OFFSET	instructionsOne
 	mDisplayString		OFFSET	instructionsTwo
+	CALL	CrLf
+	CALL	CrLf
 		
 	MOV		ECX, ARRAYSIZE
 	MOV		EDI, OFFSET userArray		
@@ -99,6 +109,23 @@ main PROC
 	PUSH	OFFSET	userArray ; + 8
 	CALL	DisplayList
 
+	PUSH	LENGTHOF outputBuffer
+	PUSH	LENGTHOF reverseOutputBuffer
+	PUSH	OFFSET outputBuffer
+	PUSH	OFFSET reverseOutputBuffer
+	PUSH	LENGTHOF userArray ; + 16
+	PUSH	OFFSET sumMessage ; + 12
+	PUSH	OFFSET userArray ; + 8
+	CALL	DisplaySum
+
+	PUSH	LENGTHOF outputBuffer
+	PUSH	LENGTHOF reverseOutputBuffer
+	PUSH	OFFSET outputBuffer
+	PUSH	OFFSET reverseOutputBuffer
+	PUSH	LENGTHOF userArray ; + 16
+	PUSH	OFFSET averageMessage ; + 12
+	PUSH	OFFSET userArray ; + 8
+	CALL	DisplayAverage
 
 	Invoke ExitProcess,0	; exit to operating system
 main ENDP
@@ -111,6 +138,7 @@ ReadVal PROC
 	JMP	_try
 
 	_errorTryAgain:
+		POP		EDX
 		mDisplayString [EBP+8]
 	_try:
 		mGetString [EBP+16], [EBP+12], [EBP+24], [EBP+28]
@@ -143,9 +171,9 @@ ReadVal PROC
 			MOV		EDX, 10
 			MUL		EDX
 			JO		_errorTryAgain
-			POP		EDX
 			ADD		EAX, EBX
 			JO		_errorTryAgain
+			POP		EDX
 			JMP		_skipToEnd
 
 		_skipToEndNegative:
@@ -233,7 +261,7 @@ DisplayList PROC
 	MOV		ECX, [EBP + 40]
 	MOV		ESI, [EBP + 8]
 
-
+	CALL	CrLf
 	mDisplayString [EBP + 24] ; HEADER MESSAGE
 	CALL	CrLf
 
@@ -267,18 +295,79 @@ DisplaySum PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 
+	PUSH	[EBP + 20]
+	PUSH	[EBP + 28]
+	CALL	ClearString
+
+	PUSH	[EBP + 24]
+	PUSH	[EBP + 32]
+	CALL	ClearString
+
+	MOV		EAX, 0
+	MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+	MOV		ECX, [EBP + 16]
+
+	_sumLoop:
+		ADD		EAX, [ESI]
+		ADD		ESI, 4
+		LOOP	_sumLoop
+	
+	PUSH	[EBP + 24]
+	PUSH	[EBP + 20]
+	PUSH	EAX
+	CALL	WriteVal
+
+	CALL	CrLf
+	CALL	CrLf
+	mDisplayString [EBP + 12]
+	mDisplayString [EBP + 24]
 
 	POP		EBP
-	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 DisplaySum ENDP
 
 DisplayAverage PROC
 	PUSH	EBP
 	MOV		EBP, ESP
+	PUSHAD
 
 
+	PUSH	[EBP + 20]
+	PUSH	[EBP + 28]
+	CALL	ClearString
+
+	PUSH	[EBP + 24]
+	PUSH	[EBP + 32]
+	CALL	ClearString
+
+	MOV		EAX, 0
+	MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+	MOV		ECX, [EBP + 16]
+
+	_sumLoop:
+		ADD		EAX, [ESI]
+		ADD		ESI, 4
+		LOOP	_sumLoop
+	
+	MOV		EDX, 0
+	MOV		EBX, [EBP + 16]
+	IDIV	EBX
+
+	PUSH	[EBP + 24]
+	PUSH	[EBP + 20]
+	PUSH	EAX
+	CALL	WriteVal
+
+	CALL	CrLf
+	CALL	CrLf
+	mDisplayString [EBP + 12]
+	mDisplayString [EBP + 24]
+	CALL	CrLf
+	CALL	CrLf
+
+	POPAD
 	POP		EBP
-	RET		; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 DisplayAverage ENDP
 
 ReverseString PROC
