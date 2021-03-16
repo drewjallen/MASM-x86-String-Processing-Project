@@ -10,6 +10,24 @@ TITLE Project 6: String Primitives and Macros    (Proj6_Allendr.asm)
 				
 
 INCLUDE Irvine32.inc
+;-------------------------------------------------------------------------------------
+; Name: mGetString
+;
+; Gets a string input from the user and stores it in memory
+; 
+; Preconditions: 
+;		arrayBuffer has been declared and the SIZEOF is known
+;
+; Receives:
+;		OFFSET prompt
+;		OFFSET inputBuffer
+;		inputLength (value)
+;		OFFSET bytesRead
+;
+; Returns: 
+;		inputBuffer = inputted string
+;		bytesRead = number of bytes read in from user
+;------------------------------------------------------------------------------------
 
 mGetString MACRO prompt, inputBuffer, inputLength, bytesRead
 	PUSH	EDX
@@ -29,6 +47,20 @@ mGetString MACRO prompt, inputBuffer, inputLength, bytesRead
 	POP		EDX
 ENDM
 
+;-------------------------------------------------------------------------------------
+; Name: mDisplayString
+;
+; Retrieves a string from memory and prints it to the console
+; 
+; Preconditions: 
+;		arrayBuffer has been declared and the SIZEOF is known
+;
+; Receives:
+;		OFFSET storedArray
+;
+; Returns: 
+;		None
+;------------------------------------------------------------------------------------
 mDisplayString MACRO storedArray
 	PUSH	EDX
 	
@@ -39,7 +71,7 @@ mDisplayString MACRO storedArray
 ENDM
 
 
-	ARRAYSIZE			=			10
+	ARRAYSIZE			 =			10
 
 .data
 
@@ -74,80 +106,119 @@ ENDM
 main PROC
 
 	mDisplayString		OFFSET	openingTitle
+	CALL	CrLf
 	mDisplayString		OFFSET	author
 	CALL	CrLf
 	mDisplayString		OFFSET	instructionsOne
+	CALL	CrLf
 	mDisplayString		OFFSET	instructionsTwo
 	CALL	CrLf
 	CALL	CrLf
-		
+	
+	; Retrieve ten strings from user and convert to ints
 	MOV		ECX, ARRAYSIZE
 	MOV		EDI, OFFSET userArray		
 	_fillArrayLoop:
 		MOV		EAX, 0
-		PUSH	userDigitsEntered ; EBP + 28
-		PUSH	SIZEOF userInputBuffer ; EBP + 24
-		PUSH	OFFSET convertedInput	; EBP + 20
-		PUSH	OFFSET userPrompt ; EBP + 16 
-		PUSH	OFFSET userInputBuffer ;EBP+12
-		PUSH	OFFSET errorMessage ; EBP+8
+		PUSH	OFFSET userDigitsEntered
+		PUSH	SIZEOF userInputBuffer
+		PUSH	OFFSET convertedInput
+		PUSH	OFFSET userPrompt
+		PUSH	OFFSET userInputBuffer
+		PUSH	OFFSET errorMessage
 		CALL	ReadVal
 		MOV		EAX, convertedInput
 		MOV		[EDI], EAX
 		ADD		EDI, 4
 		LOOP	_fillArrayLoop
 	
-
-	PUSH	LENGTHOF userArray ; EBP + 40
-	PUSH	LENGTHOF outputBuffer ; + 36
-	PUSH	LENGTHOF reverseOutputBuffer ; + 32
-	PUSH	OFFSET	spacing ; + 28
-	PUSH	OFFSET	listMessage ; + 24
-	PUSH	OFFSET	digitsCounted ; EBP + 20
-	PUSH	OFFSET	outputBuffer ; + 16
-	PUSH	OFFSET	reverseOutputBuffer ; +12
-	PUSH	OFFSET	userArray ; + 8
+	; Display list of numbers entered by user	
+	PUSH	LENGTHOF userArray
+	PUSH	LENGTHOF outputBuffer
+	PUSH	LENGTHOF reverseOutputBuffer
+	PUSH	OFFSET	spacing
+	PUSH	OFFSET	listMessage
+	PUSH	OFFSET	digitsCounted
+	PUSH	OFFSET	outputBuffer
+	PUSH	OFFSET	reverseOutputBuffer
+	PUSH	OFFSET	userArray
 	CALL	DisplayList
 
+	; Display sum of all user's ten numbers
 	PUSH	LENGTHOF outputBuffer
 	PUSH	LENGTHOF reverseOutputBuffer
 	PUSH	OFFSET outputBuffer
 	PUSH	OFFSET reverseOutputBuffer
-	PUSH	LENGTHOF userArray ; + 16
-	PUSH	OFFSET sumMessage ; + 12
-	PUSH	OFFSET userArray ; + 8
+	PUSH	LENGTHOF userArray
+	PUSH	OFFSET sumMessage
+	PUSH	OFFSET userArray
 	CALL	DisplaySum
 
+	; Display average of all user's ten numbers
 	PUSH	LENGTHOF outputBuffer
 	PUSH	LENGTHOF reverseOutputBuffer
 	PUSH	OFFSET outputBuffer
 	PUSH	OFFSET reverseOutputBuffer
-	PUSH	LENGTHOF userArray ; + 16
-	PUSH	OFFSET averageMessage ; + 12
-	PUSH	OFFSET userArray ; + 8
+	PUSH	LENGTHOF userArray
+	PUSH	OFFSET averageMessage
+	PUSH	OFFSET userArray
 	CALL	DisplayAverage
 
-	Invoke ExitProcess,0	; exit to operating system
+	Invoke ExitProcess,0
 main ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: ReadVal
+;
+; Retrieves a string from user by calling mGetString, performs a validation to make 
+;		sure it can be converted, then stores the integer in memory where it can be
+;		accessed and copied into an array
+; 
+; Preconditions: 
+;		memory allocated for storing converted integer
+;		prompt and error message strings declared and stored in memory
+;		memory allocated for storage of user entered string
+;
+; Receives:
+;		[EBP + 28] OFFSET userDigitsEntered
+;		[EBP + 24] SIZEOF userInputBuffer
+;		[EBP + 20] OFFSET convertedInput
+;		[EBP + 16] OFFSET userPrompt
+;		[EBP + 12] OFFSET userInputBuffer
+;		[EBP + 8] OFFSET errorMessage
+;
+; Returns: 
+;		convertedInput now has stored integer converted from user's string input
+;------------------------------------------------------------------------------------
 ReadVal PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 	PUSHAD
-		
+	
+	; skip past error message
 	JMP	_try
 
+	_errorTryAgainRestoreEBX:
+		POP		EDX ; EDX was pushed just before being used in multiplication and must be restored before looping back to the error message
 	_errorTryAgain:
-		POP		EDX
 		mDisplayString [EBP+8]
+		CALL	CrLf
 	_try:
 		mGetString [EBP+16], [EBP+12], [EBP+24], [EBP+28]
-
-
+	
+	;--------------------------------------------------
+	; in this converstion loop each character in
+	; the user's string is loaded and moved into
+	; BL register so EAX can be used for conversion
+	; math. EBX is compared with various ASCII values
+	; to determine its validity. Conversion of characters
+	; is done by subtracting 48 and multiplying factors
+	; of ten.
+	;---------------------------------------------------
 	MOV		ESI, [EBP+12]
 	MOV		ECX, [EBP+28]
 	MOV		EAX, 0
-	MOV		EDX, 0 ; DX == 1: number is negative. == 0: positive. save until end and use to decide of IMUL needed on final number
+	MOV		EDX, 0 ; DX == -1: number is negative. == 0: positive. save until end and use to decide of MUL needed on final number
 	_conversionLoop:
 		PUSH	EAX
 		LODSB
@@ -155,10 +226,11 @@ ReadVal PROC
 		MOV		BL, AL
 		POP		EAX
 		
-		CMP		EBX, 43
+
+		CMP		EBX, 43 ; checking for a '+' sign
 		JE		_skipToEnd
 		CMP		EBX, 45
-		JE		_skipToEndNegative
+		JE		_skipToEndNegative ; checking for a '-' sign
 
 		_notSignSymbol:
 			CMP		EBX, 48
@@ -170,9 +242,9 @@ ReadVal PROC
 			PUSH	EDX
 			MOV		EDX, 10
 			MUL		EDX
-			JO		_errorTryAgain
+			JO		_errorTryAgainRestoreEBX
 			ADD		EAX, EBX
-			JO		_errorTryAgain
+			JO		_errorTryAgainRestoreEBX
 			POP		EDX
 			JMP		_skipToEnd
 
@@ -187,7 +259,7 @@ ReadVal PROC
 	JMP		_notNegative
 
 	_makeNegative:
-		MUL		EDX
+		MUL		EDX ; if the user entered a '-' sign then convert the value to negative with multiplication
 
 	_notNegative:
 		MOV		EBX, [EBP+20]
@@ -195,16 +267,36 @@ ReadVal PROC
 	
 	POPAD
 	POP		EBP
-	RET		24 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		24
 ReadVal ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: WriteVal
+;
+; Retrieves an integer from memory and converts it to its string representation based on
+;		ASCII code
+; 
+; Preconditions: 
+;		userArray has been filled with SDWORD values
+;		reverseOutput is is uninitialized or filled with null bytes
+;		outputBuffer is uninitialized or filled with null bytes
+;
+; Receives:
+;		[EBP + 8 ] SDWORD in userArray
+;		[EBP + 16]  OFFSET outputBuffer
+;		[EBP + 12] OFFSET	reverseOutputBuffer
+;
+; Returns: 
+;		outputBuffer now has correctly ordered string representing integer
+;		stored in memory
+;------------------------------------------------------------------------------------
 WriteVal PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 	PUSHAD
 
 	MOV		ECX, 0
-	MOV		EAX, [EBP + 8] ; integer value
+	MOV		EAX, [EBP + 8] ; integer value to be converted
 	MOV		EBX, 1
 
 	CMP		EAX, 0
@@ -216,8 +308,14 @@ WriteVal PROC
 		INC		ECX
 
 	_notNegative:
-		MOV		EDI, [EBP + 12] ; reverse output
+		MOV		EDI, [EBP + 12]
 	
+	;--------------------------------------------------
+	; in this converstion loop the integer to be converted
+	; is processed into its ASCII form by dividing by factors
+	; of 10 and adding back 48. Each converted ASCII value is
+	; stored in its place in the string
+	;------------------------------------------
 	MOV		EDX, 0
 	MUL		EBX
 	PUSH	EBX
@@ -246,13 +344,38 @@ WriteVal PROC
 		PUSH	ECX
 		PUSH	[EBP + 16] ; REGULAR OUTPUT BUFFER
 		PUSH	[EBP + 12] ; REVERSE OUTPUT BUFFER
-		CALL	ReverseString
+		CALL	ReverseString ; String is reveresed for final output as it is stored originally in reverse order
 
 	POPAD
 	POP		EBP
-	RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		12
 WriteVal ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: DisplayList
+;
+; Retrieves an integer from memory and converts it to its string representation based on
+;		ASCII code
+; 
+; Preconditions: 
+;		userArray has been filled with SDWORD values
+;		reverseOutput is is uninitialized or filled with null bytes
+;		outputBuffer is uninitialized or filled with null bytes
+;
+; Receives:
+;		[EBP + 40] LENGTHOF userArray
+;		[EBP + 36] LENGTHOF outputBuffer
+;		[EBP + 32] LENGTHOF reverseOutputBuffer
+;		[EBP + 28] OFFSET	spacing
+;		[EBP + 24] OFFSET	listMessage
+;		[EBP + 20] OFFSET	digitsCounted
+;		[EBP + 16] OFFSET	outputBuffer
+;		[EBP + 12] OFFSET	reverseOutputBuffer
+;		[EBP + 8] OFFSET	userArray
+;
+; Postconditions: 
+;		writeVal PROC has changed reverseOutputBuffer and outputBuffer
+;------------------------------------------------------------------------------------
 DisplayList PROC
 	PUSH	EBP
 	MOV		EBP, ESP
@@ -262,38 +385,65 @@ DisplayList PROC
 	MOV		ESI, [EBP + 8]
 
 	CALL	CrLf
-	mDisplayString [EBP + 24] ; HEADER MESSAGE
+	mDisplayString [EBP + 24] ; display message
 	CALL	CrLf
 
 	_displayLoop:
 		MOV		EAX, [ESI]
 		
-		PUSH	[EBP + 12] ; reverse buffer
-		PUSH	[EBP + 32] ; reverse length
+		PUSH	[EBP + 12]
+		PUSH	[EBP + 32]
+		CALL	ClearString ; clear strings at each iteration to prevent unintended over-writes
+
+		PUSH	[EBP + 16]
+		PUSH	[EBP + 36]
 		CALL	ClearString
 
-		PUSH	[EBP + 16] ; OUTPUT BUFFER
-		PUSH	[EBP + 36] ; output buffer length
-		CALL	ClearString
-
+		;----------------
+		; convert int to 
+		; string for output
+		;----------------
 		PUSH	[EBP + 16]
 		PUSH	[EBP + 12]
 		PUSH	EAX
 		CALL	WriteVal
 		
-		mDisplayString [EBP + 16] ; OUTPUT BUFFER
-		mDisplayString [EBP + 28] ; SPACING
+		mDisplayString [EBP + 16]
+		mDisplayString [EBP + 28] ; string for formatting
 		ADD		ESI, 4
 		LOOP	_displayLoop
 
 	POPAD
 	POP		EBP
-	RET		36 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		36
 DisplayList ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: DisplaySum
+;
+; Repeatedly ADDs to a running sum for each value in the SDWORD array passed in by reference.
+;		Takes that sum, then passes it into writeVal as a stack parameter to be converted into 
+;		a string for output 
+; 
+; Preconditions: 
+;		userArray has been filled with SDWORD values
+;
+; Receives:
+;		[EBP + 32] LENGTHOF outputBuffer
+;		[EBP + 28] LENGTHOF reverseOutputBuffer
+;		[EBP + 24] OFFSET outputBuffer
+;		[EBP + 20] OFFSET reverseOutputBuffer
+;		[EBP + 16] LENGTHOF userArray
+;		[EBP + 12] OFFSET sumMessage
+;		[EBP + 8] OFFSET userArray
+;
+; Postconditions: 
+;		writeVal PROC has changed reverseOutputBuffer and outputBuffer
+;------------------------------------------------------------------------------------
 DisplaySum PROC
 	PUSH	EBP
 	MOV		EBP, ESP
+	PUSHAD
 
 	PUSH	[EBP + 20]
 	PUSH	[EBP + 28]
@@ -303,8 +453,9 @@ DisplaySum PROC
 	PUSH	[EBP + 32]
 	CALL	ClearString
 
-	MOV		EAX, 0
-	MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+	MOV		EAX, 0 ; EAX will hold the running sum, then will be passed as a parameter on
+				   ; on the stack
+	MOV		ESI, [EBP + 8]
 	MOV		ECX, [EBP + 16]
 
 	_sumLoop:
@@ -322,10 +473,33 @@ DisplaySum PROC
 	mDisplayString [EBP + 12]
 	mDisplayString [EBP + 24]
 
+	POPAD
 	POP		EBP
-	RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		28
 DisplaySum ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: DisplayAverage
+;
+; Repeatedly ADDs to a running sum for each value in the SDWORD array passed in by reference.
+;		Takes that sum, then divides it by the number of values in the array. The resulting
+;		average is passed into writeVal as a stack parameter to be converted into a string for output
+; 
+; Preconditions: 
+;		userArray has been filled with SDWORD values
+;
+; Receives:
+;		[EBP + 32] LENGTHOF outputBuffer
+;		[EBP + 28] LENGTHOF reverseOutputBuffer
+;		[EBP + 24] OFFSET outputBuffer
+;		[EBP + 20] OFFSET reverseOutputBuffer
+;		[EBP + 16] LENGTHOF userArray
+;		[EBP + 12] OFFSET averageMessage
+;		[EBP + 8] OFFSET userArray
+;
+; Postconditions: 
+;		writeVal PROC has changed reverseOutputBuffer and outputBuffer
+;------------------------------------------------------------------------------------
 DisplayAverage PROC
 	PUSH	EBP
 	MOV		EBP, ESP
@@ -341,7 +515,7 @@ DisplayAverage PROC
 	CALL	ClearString
 
 	MOV		EAX, 0
-	MOV		ESI, [EBP + 8] ;USERARRAY OFFSET
+	MOV		ESI, [EBP + 8]
 	MOV		ECX, [EBP + 16]
 
 	_sumLoop:
@@ -370,17 +544,39 @@ DisplayAverage PROC
 	RET		28 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 DisplayAverage ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: ReverseString
+;
+; Loads each byte from the backwards string started at the last index, then stores it
+; in a second string in the correct order
+; 
+; Preconditions: 
+;		reverseOutputBuffer contains a string to be reversed
+;		outputBuffer is uninitialized or filled with null bytes
+;
+; Receives:
+;		[EBP + 16] length of reverseOutputBuffer
+;		[EBP + 12] OFFSET	outputBuffer
+;		[EBP + 8] OFFSET	reverseOutputBuffer
+;
+; Returns: 
+;		outputBuffer contains the reverse order of reverseOutputBuffer
+;------------------------------------------------------------------------------------
 ReverseString PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 	PUSHAD
 
-	MOV		ESI, [EBP+8] ;reverseBuffer OFFSET
-	MOV		EDI, [EBP +12] ;outputBuffer OFFSET
-	MOV		ECX, [EBP+16] ;length of reverseBuffer
+	MOV		ESI, [EBP+8]
+	MOV		EDI, [EBP +12]
+	MOV		ECX, [EBP+16]
 	ADD		ESI, ECX
 	DEC		ESI
 
+	;------------------------------------------------------
+	; Sets direction flag to pull value from backwards array
+	; Clears direction flag to store value in correct order
+	;------------------------------------------------------
 	_reverseLoop:
 		STD
 		LODSB
@@ -393,13 +589,29 @@ ReverseString PROC
 	RET		12 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
 ReverseString ENDP
 
+;-------------------------------------------------------------------------------------
+; Name: ClearString
+;
+; Clears string by iterating through each element and replacing it with a null byte
+; 
+; Preconditions: 
+;		reverseOutputBuffer contains a string to be reversed
+;		outputBuffer is uninitialized or filled with null bytes
+;
+; Receives:
+;		[EBP + 12] OFFSET of array to clear
+;		[EBP + 8] LENGTHOF array to clear
+;
+; Returns: 
+;		array at OFFSET is now cleared and filled with null bytes
+;------------------------------------------------------------------------------------
 ClearString PROC
 	PUSH	EBP
 	MOV		EBP, ESP
 	PUSHAD
 
-	MOV		ECX, [EBP + 8];LENGTHOF BUFFER
-	MOV		EDI, [EBP + 12];BUFFER TO CLEAR
+	MOV		ECX, [EBP + 8]
+	MOV		EDI, [EBP + 12]
 	MOV		EBX, 0
 
 	_clearLoop:
@@ -409,7 +621,7 @@ ClearString PROC
 	
 	POPAD
 	POP		EBP
-	RET		8 ; N equal to the number of bytes of parameters which were pushed on the stack before the CALL statement.
+	RET		8
 ClearString ENDP
 
 
