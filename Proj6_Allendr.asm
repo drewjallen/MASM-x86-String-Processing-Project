@@ -525,6 +525,7 @@ DisplayAverage PROC
 	
 	MOV		EDX, 0
 	MOV		EBX, [EBP + 16]
+	CDQ
 	IDIV	EBX
 
 	PUSH	[EBP + 24]
