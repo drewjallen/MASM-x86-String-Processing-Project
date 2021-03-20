@@ -1,13 +1,5 @@
 TITLE Project 6: String Primitives and Macros    (Proj6_Allendr.asm)
 
-; Author: Drew Allen
-; Last Modified: 3/13/21
-; OSU email address: Allendr@oregonstate.edu
-; Course number/section:   CS271 Section 400
-; Project Number:    6             Due Date:  3/14/21
-; Description: This program implements two macros for string processing and tests them
-;				with several procedures
-				
 
 INCLUDE Irvine32.inc
 ;-------------------------------------------------------------------------------------
